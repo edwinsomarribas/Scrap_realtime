@@ -7,7 +7,7 @@ from datetime import datetime
 # =========================
 # Configuración del Excel
 # =========================
-NOMBRE_EXCEL = "datos_productividad.xlsx"
+NOMBRE_EXCEL = r"C:\Users\edwin.somarribas\Documents\OneDrive - Cirtec Medical Corporation\Python\datos_productividad.xlsx"
 NOMBRE_HOJA = "Scrap"
 
 
@@ -89,30 +89,9 @@ def actualizar_maquinas(event=None):
 
 
 # =========================
-# FUNCIÓN: Limpiar campos después de guardar
+# FUNCIÓN: Limpiar campos
 # =========================
-def limpiar_campos_despues_guardar():
-
-    entrada_producto.set("Seleccione un producto")
-
-    # IMPORTANTE:
-    # No se borra el campo Job después de guardar
-    # entrada_job.delete(0, tk.END)
-
-    entrada_maquina["values"] = []
-    entrada_maquina.set("Seleccione una máquina")
-
-    entrada_scrap.set("Seleccione scrap")
-    entrada_cantidad_scrap.delete(0, tk.END)
-    entrada_comentarios.delete(0, tk.END)
-
-    entrada_producto.focus()
-
-
-# =========================
-# FUNCIÓN: Limpiar todos los campos con botón Limpiar
-# =========================
-def limpiar_todos_los_campos():
+def limpiar_campos():
 
     entrada_producto.set("Seleccione un producto")
     entrada_job.delete(0, tk.END)
@@ -221,8 +200,7 @@ def boton_guardar():
             f"Datos guardados en la fila {fila_guardada}."
         )
 
-        # Limpia campos después de guardar, pero mantiene Job
-        limpiar_campos_despues_guardar()
+        limpiar_campos()
 
     except PermissionError:
         messagebox.showerror(
@@ -360,7 +338,7 @@ btn_guardar.grid(row=0, column=0, padx=5)
 btn_limpiar = tk.Button(
     frame_botones,
     text="Limpiar",
-    command=limpiar_todos_los_campos,
+    command=limpiar_campos,
     bg="orange",
     width=12
 )
