@@ -7,10 +7,10 @@ from datetime import datetime
 # =========================
 # Configuración del Excel
 # =========================
+
 NOMBRE_EXCEL = "datos_productividad.xlsx"
 
-# Si lo querés usar en Android con Pydroid y guardar en Descargas,
-# podés usar esta línea en lugar de la anterior:
+# Para Android (Pydroid) puedes usar:
 # NOMBRE_EXCEL = "/storage/emulated/0/Download/datos_productividad.xlsx"
 
 NOMBRE_HOJA = "Scrap"
@@ -19,57 +19,49 @@ NOMBRE_HOJA = "Scrap"
 # =========================
 # FUNCIÓN: Guardar en Excel
 # =========================
+
 def guardar_en_excel(datos):
 
     ruta_excel = Path(NOMBRE_EXCEL)
 
-    # Si el archivo existe, se abre. Si no, se crea.
     if ruta_excel.exists():
         libro = load_workbook(NOMBRE_EXCEL)
     else:
         libro = Workbook()
 
-    # Seleccionar o crear hoja.
     if NOMBRE_HOJA in libro.sheetnames:
         hoja = libro[NOMBRE_HOJA]
     else:
         hoja = libro.create_sheet(NOMBRE_HOJA)
 
-    # Eliminar hoja default si existe.
     if "Sheet" in libro.sheetnames and len(libro.sheetnames) > 1:
         libro.remove(libro["Sheet"])
 
-    # Crear encabezados si está vacío.
     if hoja.max_row == 1 and hoja["A1"].value is None:
-        hoja["A1"] = "Fecha"
-        hoja["B1"] = "Producto"
-        hoja["C1"] = "Job"
-        hoja["D1"] = "Máquina"
-        hoja["E1"] = "Scrap"
-        hoja["F1"] = "Cantidad Scrap"
-        hoja["G1"] = "Comentarios"
+        hoja.append([
+            "Fecha",
+            "Producto",
+            "Job",
+            "Máquina",
+            "Scrap",
+            "Cantidad Scrap",
+            "Comentarios",
+            "Operario"
+        ])
 
-    # Siguiente fila disponible.
-    siguiente_fila = hoja.max_row + 1
+    hoja.append(datos)
 
-    # Guardar datos.
-    hoja[f"A{siguiente_fila}"] = datos[0]  # Fecha
-    hoja[f"B{siguiente_fila}"] = datos[1]  # Producto
-    hoja[f"C{siguiente_fila}"] = datos[2]  # Job
-    hoja[f"D{siguiente_fila}"] = datos[3]  # Máquina
-    hoja[f"E{siguiente_fila}"] = datos[4]  # Scrap
-    hoja[f"F{siguiente_fila}"] = datos[5]  # Cantidad Scrap
-    hoja[f"G{siguiente_fila}"] = datos[6]  # Comentarios
+    fila_guardada = hoja.max_row
 
-    # Guardar archivo.
     libro.save(NOMBRE_EXCEL)
 
-    return siguiente_fila
+    return fila_guardada
 
 
 # =========================
-# FUNCIÓN: Actualizar máquinas según producto
+# FUNCIÓN: Actualizar máquinas
 # =========================
+
 def actualizar_maquinas(event=None):
 
     producto = entrada_producto.get()
@@ -78,13 +70,29 @@ def actualizar_maquinas(event=None):
         opciones_maquina = ["261056"]
 
     elif producto == "Body":
-        opciones_maquina = ["CR-261056", "CR-261057", "261056"]
+        opciones_maquina = [
+            "CR-261056",
+            "CR-261057",
+            "261056"
+        ]
 
     elif producto == "RO":
-        opciones_maquina = ["Celda1", "Celda2", "CW1", "CW2", "CW3", "CW4"]
+        opciones_maquina = [
+            "Celda1",
+            "Celda2",
+            "CW1",
+            "CW2",
+            "CW3",
+            "CW4"
+        ]
 
     elif producto == "Stryker":
-        opciones_maquina = ["CW1", "CW2", "CW3", "CW4"]
+        opciones_maquina = [
+            "CW1",
+            "CW2",
+            "CW3",
+            "CW4"
+        ]
 
     else:
         opciones_maquina = []
@@ -94,8 +102,9 @@ def actualizar_maquinas(event=None):
 
 
 # =========================
-# FUNCIÓN: Limpiar todo manualmente
+# FUNCIÓN: Limpiar todo
 # =========================
+
 def limpiar_campos():
 
     entrada_producto.set("Seleccione un producto")
@@ -105,31 +114,32 @@ def limpiar_campos():
     entrada_maquina.set("Seleccione una máquina")
 
     entrada_scrap.set("Seleccione scrap")
+
     entrada_cantidad_scrap.delete(0, tk.END)
     entrada_comentarios.delete(0, tk.END)
+    entrada_operarios.delete(0, tk.END)
 
     entrada_producto.focus()
 
 
 # =========================
-# FUNCIÓN: Limpiar después de guardar
+# FUNCIÓN: Limpiar después guardar
 # =========================
+
 def limpiar_despues_de_guardar():
-    """
-    Esta función limpia solo los campos que deben cambiar en cada registro.
-    Producto, Job y Máquina se mantienen iguales.
-    """
 
     entrada_scrap.set("Seleccione scrap")
     entrada_cantidad_scrap.delete(0, tk.END)
     entrada_comentarios.delete(0, tk.END)
+    entrada_operarios.delete(0, tk.END)
 
     entrada_scrap.focus()
 
 
 # =========================
-# FUNCIÓN: Botón Guardar
+# FUNCIÓN: Guardar
 # =========================
+
 def boton_guardar():
 
     producto = entrada_producto.get()
@@ -138,8 +148,8 @@ def boton_guardar():
     scrap = entrada_scrap.get()
     cantidad_scrap = entrada_cantidad_scrap.get().strip()
     comentarios = entrada_comentarios.get().strip()
+    operarios = entrada_operarios.get().strip()
 
-    # Evitar guardar los textos iniciales de los menús.
     if producto == "Seleccione un producto":
         producto = ""
 
@@ -149,56 +159,62 @@ def boton_guardar():
     if scrap == "Seleccione scrap":
         scrap = ""
 
-    # =========================
-    # CHECKPOINT: Validar que todos los campos estén llenos
-    # =========================
     campos_faltantes = []
 
-    if producto == "":
+    if not producto:
         campos_faltantes.append("Producto")
 
-    if job == "":
+    if not job:
         campos_faltantes.append("Job")
 
-    if maquina == "":
+    if not maquina:
         campos_faltantes.append("Máquina")
 
-    if scrap == "":
+    if not scrap:
         campos_faltantes.append("Scrap")
 
-    if cantidad_scrap == "":
+    if not cantidad_scrap:
         campos_faltantes.append("Cantidad Scrap")
 
-    if comentarios == "":
+    if not comentarios:
         campos_faltantes.append("Comentarios")
 
-    # Si hay campos vacíos, detener el guardado.
+    if not operarios:
+        campos_faltantes.append("Operarios")
+
     if campos_faltantes:
+
         mensaje = "Debe completar todos los campos antes de guardar.\n\n"
         mensaje += "Campos faltantes:\n"
-        mensaje += "\n".join(f"- {campo}" for campo in campos_faltantes)
+        mensaje += "\n".join(f"• {campo}" for campo in campos_faltantes)
 
-        messagebox.showwarning("Campos incompletos", mensaje)
+        messagebox.showwarning(
+            "Campos incompletos",
+            mensaje
+        )
+
         return
 
-    # =========================
-    # CHECKPOINT: Validar que Cantidad Scrap sea número
-    # =========================
     try:
+
         cantidad_scrap_numero = int(cantidad_scrap)
 
         if cantidad_scrap_numero <= 0:
+
             messagebox.showwarning(
                 "Cantidad inválida",
-                "La cantidad de scrap debe ser mayor que 0."
+                "La cantidad de scrap debe ser mayor que cero."
             )
+
             return
 
     except ValueError:
+
         messagebox.showwarning(
             "Cantidad inválida",
             "La cantidad de scrap debe ser un número entero."
         )
+
         return
 
     fecha = datetime.now().strftime("%Y-%m-%d %H:%M")
@@ -210,10 +226,12 @@ def boton_guardar():
         maquina,
         scrap,
         cantidad_scrap_numero,
-        comentarios
+        comentarios,
+        operarios
     ]
 
     try:
+
         fila_guardada = guardar_en_excel(datos)
 
         messagebox.showinfo(
@@ -221,52 +239,70 @@ def boton_guardar():
             f"Datos guardados en la fila {fila_guardada}."
         )
 
-        # Importante:
-        # Después de guardar NO se limpian Producto, Job ni Máquina.
         limpiar_despues_de_guardar()
 
     except PermissionError:
+
         messagebox.showerror(
             "Archivo abierto",
             "No se pudo guardar porque el archivo Excel está abierto.\n\n"
-            "Cierre el archivo datos_productividad.xlsx e intente de nuevo."
+            "Cierre el archivo y vuelva a intentarlo."
         )
 
     except Exception as error:
-        messagebox.showerror("Error", f"Ocurrió un error:\n{error}")
+
+        messagebox.showerror(
+            "Error",
+            f"Ocurrió un error:\n{error}"
+        )
 
 
 # =========================
 # VENTANA PRINCIPAL
 # =========================
+
 ventana = tk.Tk()
+
 ventana.title("Registro de Productividad Coils")
-ventana.geometry("460x430")
+ventana.geometry("500x520")
 ventana.resizable(True, True)
 
 
 # =========================
 # TÍTULO
 # =========================
+
 titulo = tk.Label(
     ventana,
     text="Ingreso de Scrap",
     font=("Arial", 16, "bold")
 )
+
 titulo.pack(pady=10)
 
 
 # =========================
 # FRAME FORMULARIO
 # =========================
+
 frame = tk.Frame(ventana)
 frame.pack(pady=10)
 
 
 # =========================
-# Campo Producto - Menú desplegable
+# PRODUCTO
 # =========================
-tk.Label(frame, text="Producto:").grid(row=0, column=0, padx=10, pady=5, sticky="e")
+
+tk.Label(
+    frame,
+    text="Producto:"
+).grid(
+    row=0,
+    column=0,
+    padx=10,
+    pady=5,
+    sticky="e"
+)
 
 entrada_producto = ttk.Combobox(
     frame,
@@ -274,26 +310,49 @@ entrada_producto = ttk.Combobox(
     width=27,
     state="readonly"
 )
+
 entrada_producto.grid(row=0, column=1)
 entrada_producto.set("Seleccione un producto")
 
-# Evento reactivo: cuando cambia Producto, cambia Máquina.
-entrada_producto.bind("<<ComboboxSelected>>", actualizar_maquinas)
+entrada_producto.bind(
+    "<<ComboboxSelected>>",
+    actualizar_maquinas
+)
 
 
 # =========================
-# Campo Job
+# JOB
 # =========================
-tk.Label(frame, text="Job:").grid(row=1, column=0, padx=10, pady=5, sticky="e")
+
+tk.Label(
+    frame,
+    text="Job:"
+).grid(
+    row=1,
+    column=0,
+    padx=10,
+    pady=5,
+    sticky="e"
+)
 
 entrada_job = tk.Entry(frame, width=30)
 entrada_job.grid(row=1, column=1)
 
 
 # =========================
-# Campo Máquina - Menú desplegable reactivo
+# MÁQUINA
 # =========================
-tk.Label(frame, text="Máquina:").grid(row=2, column=0, padx=10, pady=5, sticky="e")
+
+tk.Label(
+    frame,
+    text="Máquina:"
+).grid(
+    row=2,
+    column=0,
+    padx=10,
+    pady=5,
+    sticky="e"
+)
 
 entrada_maquina = ttk.Combobox(
     frame,
@@ -301,14 +360,25 @@ entrada_maquina = ttk.Combobox(
     width=27,
     state="readonly"
 )
+
 entrada_maquina.grid(row=2, column=1)
 entrada_maquina.set("Seleccione una máquina")
 
 
 # =========================
-# Campo Scrap - Menú desplegable
+# SCRAP
 # =========================
-tk.Label(frame, text="Scrap:").grid(row=3, column=0, padx=10, pady=5, sticky="e")
+
+tk.Label(
+    frame,
+    text="Scrap:"
+).grid(
+    row=3,
+    column=0,
+    padx=10,
+    pady=5,
+    sticky="e"
+)
 
 entrada_scrap = ttk.Combobox(
     frame,
@@ -316,36 +386,75 @@ entrada_scrap = ttk.Combobox(
     width=27,
     state="readonly"
 )
+
 entrada_scrap.grid(row=3, column=1)
 entrada_scrap.set("Seleccione scrap")
 
 
 # =========================
-# Campo Cantidad Scrap
+# CANTIDAD SCRAP
 # =========================
-tk.Label(frame, text="Cantidad Scrap:").grid(row=4, column=0, padx=10, pady=5, sticky="e")
+
+tk.Label(
+    frame,
+    text="Cantidad Scrap:"
+).grid(
+    row=4,
+    column=0,
+    padx=10,
+    pady=5,
+    sticky="e"
+)
 
 entrada_cantidad_scrap = tk.Entry(frame, width=30)
 entrada_cantidad_scrap.grid(row=4, column=1)
 
 
 # =========================
-# Campo Comentarios
+# COMENTARIOS
 # =========================
-tk.Label(frame, text="Comentarios:").grid(row=5, column=0, padx=10, pady=5, sticky="e")
+
+tk.Label(
+    frame,
+    text="Comentarios:"
+).grid(
+    row=5,
+    column=0,
+    padx=10,
+    pady=5,
+    sticky="e"
+)
 
 entrada_comentarios = tk.Entry(frame, width=30)
 entrada_comentarios.grid(row=5, column=1)
 
 
 # =========================
-# FRAME BOTONES
+# OPERARIOS
 # =========================
+
+tk.Label(
+    frame,
+    text="Operarios:"
+).grid(
+    row=6,
+    column=0,
+    padx=10,
+    pady=5,
+    sticky="e"
+)
+
+entrada_operarios = tk.Entry(frame, width=30)
+entrada_operarios.grid(row=6, column=1)
+
+
+# =========================
+# BOTONES
+# =========================
+
 frame_botones = tk.Frame(ventana)
 frame_botones.pack(pady=15)
 
-
-# Botón guardar
 btn_guardar = tk.Button(
     frame_botones,
     text="Guardar",
@@ -354,10 +463,9 @@ btn_guardar = tk.Button(
     fg="white",
     width=12
 )
+
 btn_guardar.grid(row=0, column=0, padx=5)
 
-
-# Botón limpiar
 btn_limpiar = tk.Button(
     frame_botones,
     text="Limpiar",
@@ -365,10 +473,9 @@ btn_limpiar = tk.Button(
     bg="orange",
     width=12
 )
+
 btn_limpiar.grid(row=0, column=1, padx=5)
 
-
-# Botón salir
 btn_salir = tk.Button(
     frame_botones,
     text="Salir",
@@ -377,22 +484,27 @@ btn_salir = tk.Button(
     fg="white",
     width=12
 )
+
 btn_salir.grid(row=0, column=2, padx=5)
 
 
 # =========================
-# TEXTO INFERIOR
+# NOTA INFERIOR
 # =========================
+
 nota = tk.Label(
     ventana,
     text=f"Archivo: {NOMBRE_EXCEL}",
     font=("Arial", 9)
 )
+
 nota.pack(pady=5)
 
 
-# Cursor inicial
+# =========================
+# INICIO
+# =========================
+
 entrada_producto.focus()
 
-# Ejecutar app
 ventana.mainloop()
